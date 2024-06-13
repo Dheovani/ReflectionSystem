@@ -3,7 +3,9 @@
 
 using reflection_system::Reflective;
 
-class Derived : public Reflective<Derived>
+class Base {};
+
+class Derived : public Reflective<Derived>, public Base
 {
     std::string str = "string";
     long long fl = 5;
@@ -27,6 +29,7 @@ public:
     }
 
     MEMBER_LIST_BEGIN
+        PARENT_CLASS(Base)
         ATTRIBUTE(str)
         ATTRIBUTE(fl)
         METHOD(func1)
@@ -39,8 +42,6 @@ int main(int argc, char** argv)
 {
     Derived derived;
     std::cout << derived << std::endl;
-    std::cout << derived.GetSize() << std::endl;
-    std::cout << derived.GetClassname() << std::endl;
 
     return 0;
 }

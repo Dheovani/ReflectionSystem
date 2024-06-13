@@ -12,6 +12,12 @@
 #define MEMBER_LIST_BEGIN \
 	void FillMemberList() const noexcept(true) override {
 
+#define PARENT_CLASS(parent) \
+{ \
+	static_assert(std::is_class_v<parent>, #parent " is not a valid class."); \
+	static_assert(reflection_system::instance_of<parent, This>, #parent " class is not extended by this."); \
+}
+
 #define ATTRIBUTE(attrib) \
 { \
 	static_assert(reflection_system::is_attribute<decltype(&This::attrib)>, "Not an attribute."); \
@@ -139,9 +145,11 @@ namespace reflection_system
 		const size_t size = sizeof(_Class);
 		const std::string classname = ID(_Class);
 
+		mutable std::string cache;
+		mutable std::vector<Method<std::any>> methods = {};
+		mutable std::vector<Attribute<std::any>> attributes = {};
+		
 	protected:
-		using This = _Class;
-
 		Reflective() = default;
 
 	public:
@@ -151,11 +159,12 @@ namespace reflection_system
 			if (GetMethods().empty() || GetAttributes().empty())
 				FillMemberList();
 			
+			std::vector<std::string> keywords = { "__ptr64", "__cdecl", "class", "struct", "reflection_system::" };
 			std::stringstream ss;
-			ss << GetClassname(true);
+			ss << GetClassname(true) << " : " << Clear(ID(Reflective), keywords);
 
 			/*for (size_t i = 0; i < parents.size(); ++i)
-				ss << (i == 0 ? " : " : "") << parents[i] << (i + 1 < parents.size() ? ", " : "");*/
+				ss << parents[i] << (i + 1 < parents.size() ? ", " : "");*/
 
 			ss << std::endl << "{\n\tSize: " << size << std::endl << "Attributes:" << std::endl;
 			for (const Attribute<std::any>& attr : attributes)
@@ -246,9 +255,7 @@ namespace reflection_system
 
 		inline const std::vector<Attribute<std::any>>& GetAttributes() const noexcept(true) { return attributes; }
 
-	private:
-		mutable std::string cache;
-		mutable std::vector<Method<std::any>> methods = {};
-		mutable std::vector<Attribute<std::any>> attributes = {};
+	protected:
+		using This = _Class;
 	};
 }
