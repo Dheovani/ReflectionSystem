@@ -20,7 +20,7 @@
 #define PARENT_CLASSES(...) \
 protected: \
 	using Parents = std::variant<__VA_ARGS__>; \
-	inline void __classSpecificAssertations() const noexcept(false) override { FOR_EACH(ASSERTATION, __VA_ARGS__) } \
+	inline void __class_specific_assertations__() const noexcept(false) override { FOR_EACH(ASSERTATION, __VA_ARGS__) } \
 	inline const std::vector<std::string> GetParentNames() const noexcept(true) override { return { FOR_EACH(STRINGIFY, __VA_ARGS__) }; }\
 public: \
 	template <reflection_system::parent_concept<This> _Ty> auto GetParent() const noexcept { \
@@ -35,20 +35,18 @@ public: \
 { \
 	static_assert(reflection_system::is_attribute<decltype(&This::attrib)>, "Not an attribute."); \
 	std::string name = #attrib; \
-	name.erase(name.begin(), std::find_if(name.begin(), name.end(), [](int ch) { \
-		return !std::isspace(ch) && (char)ch != '&'; \
-	})); \
-	AddAttribute(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, ID(&This::attrib)), &This::attrib); \
+	name.erase(name.begin(), std::find_if(name.begin(), name.end(), [](int ch) { return !std::isspace(ch) && (char)ch != '&'; })); \
+	AddAttribute(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, ID(&This::attrib)), \
+		!std::is_member_pointer_v<decltype(&This::attrib)>, &This::attrib); \
 }
 
 #define METHOD(method) \
 { \
-	static_assert(reflection_system::is_method<decltype(&This::method)>, "Not a method."); \
+	static_assert(reflection_system::is_function<decltype(&This::method)>, "Not a method."); \
 	std::string name = #method; \
-	name.erase(name.begin(), std::find_if(name.begin(), name.end(), [](int ch) { \
-		return !std::isspace(ch) && (char)ch != '&'; \
-	})); \
-	AddMethod(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, ID(&This::method)), &This::method); \
+	name.erase(name.begin(), std::find_if(name.begin(), name.end(), [](int ch) { return !std::isspace(ch) && (char)ch != '&'; })); \
+	AddMethod(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, ID(&This::method)), \
+		!std::is_member_pointer_v<decltype(&This::method)>, &This::method); \
 }
 
 #define MEMBER_LIST_END \
@@ -68,10 +66,11 @@ namespace reflection_system
 	{
 		const hash key;
 		const std::string sign;
+		const bool isStatic;
 		const _Ty value;
 
-		Method(const hash& k, const std::string& s, const _Ty& v)
-			: key(k), sign(s), value(v)
+		Method(const hash& k, const std::string& s, const bool& st, const _Ty& v)
+			: key(k), sign(s), isStatic(st), value(v)
 		{}
 
 		bool operator==(const Method& other) const
@@ -90,10 +89,11 @@ namespace reflection_system
 	{
 		const hash key;
 		const std::string name;
+		const bool isStatic;
 		const _Ty value;
 
-		Attribute(const hash& k, const std::string& n, const _Ty& v)
-			: key(k), name(n), value(v)
+		Attribute(const hash& k, const std::string& n, const bool& st, const _Ty& v)
+			: key(k), name(n), isStatic(st), value(v)
 		{}
 
 		bool operator==(const Attribute& other) const
@@ -111,10 +111,10 @@ namespace reflection_system
 	constexpr bool instance_of = std::is_base_of_v<_Base, std::remove_pointer_t<_Derived>>;
 
 	template <typename _Ty>
-	constexpr bool is_attribute = std::is_member_object_pointer_v<_Ty>;
+	constexpr bool is_attribute = std::is_member_object_pointer_v<_Ty> || std::is_object_v<std::remove_pointer_t<_Ty>>;
 
 	template <typename _Ty>
-	constexpr bool is_method = std::is_member_function_pointer_v<_Ty>;
+	constexpr bool is_function = std::is_member_function_pointer_v<_Ty> || std::is_function_v<std::remove_pointer_t<_Ty>>;
 
 	template<class _Ty1, class _Ty2>
 	concept parent_concept = instance_of<_Ty1, _Ty2>;
@@ -171,11 +171,11 @@ namespace reflection_system
 		mutable std::vector<Attribute<std::any>> attributes = {};
 
 	protected:
-		Reflective() { __classSpecificAssertations(); }
+		Reflective() { __class_specific_assertations__(); }
 
 		virtual inline const std::vector<std::string> GetParentNames() const noexcept(true) { return {}; }
 
-		virtual inline void __classSpecificAssertations() const noexcept(false) {}
+		virtual inline void __class_specific_assertations__() const noexcept(false) {}
 
 		virtual void FillMemberList() const noexcept(true) {}
 
@@ -195,11 +195,11 @@ namespace reflection_system
 
 			ss << std::endl << "{\n\tSize: " << size << std::endl << "Attributes:" << std::endl;
 			for (const Attribute<std::any>& attr : attributes)
-				ss << "\t" << attr.name << std::endl;
+				ss << "\t" << (attr.isStatic ? "static " : "") << attr.name << std::endl;
 
 			ss << "Methods:" << std::endl;
 			for (const Method<std::any>& method : methods)
-				ss << "\t" << method.sign << std::endl;
+				ss << "\t" << (method.isStatic ? "static " : "") << method.sign << std::endl;
 
 			ss << "}" << std::endl;
 			return (cache = ss.str()).c_str();
@@ -237,21 +237,21 @@ namespace reflection_system
 		inline constexpr size_t GetSize() const noexcept(true) { return size; }
 
 		template <typename _Ty>
-		inline void AddMethod(const hash& key, const std::string& sign, const _Ty& value) const noexcept
+		inline void AddMethod(const hash& key, const std::string& sign, const bool& isStatic, const _Ty& value) const noexcept
 		{
 			if (HasMethod(key))
 				return;
 
-			methods.push_back(Method<std::any>{ key, sign, std::make_any<_Ty>(value) });
+			methods.push_back(Method<std::any>{ key, sign, isStatic, std::make_any<_Ty>(value) });
 		}
 
 		template <typename _Ty>
-		inline void AddAttribute(const hash& key, const std::string& name, const _Ty& value) const noexcept
+		inline void AddAttribute(const hash& key, const std::string& name, const bool& isStatic, const _Ty& value) const noexcept
 		{
 			if (HasAttribute(key))
 				return;
 
-			attributes.push_back(Attribute<std::any>{ key, name, std::make_any<_Ty>(value) });
+			attributes.push_back(Attribute<std::any>{ key, name, isStatic, std::make_any<_Ty>(value) });
 		}
 
 		inline constexpr bool HasMethod(const std::string& name) const noexcept

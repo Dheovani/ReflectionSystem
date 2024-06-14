@@ -10,7 +10,7 @@ struct BaseStruct {};
 class Derived : public Reflective<Derived>, public Base, public BaseStruct
 {
     std::string str = "string";
-    long long fl = 5;
+    static const long long fl = 5;
 
     void func1() { std::cout << "func1" << std::endl; }
     int func2() { return 0; }
@@ -18,9 +18,10 @@ class Derived : public Reflective<Derived>, public Base, public BaseStruct
 public:
     Derived() = default;
 
-    Derived(const std::string& s, const long long& f)
-        : str(s), fl(f)
+    Derived(const std::string& s, const long long& f) : str(s)
     {}
+
+    static void StaticMethod(void) {}
 
     void SetStr(const std::string& s) { this->str = s; }
 
@@ -37,6 +38,7 @@ public:
         ATTRIBUTE(fl)
         METHOD(func1)
         METHOD(func2)
+        METHOD(StaticMethod)
         METHOD(PrintMethods)
     MEMBER_LIST_END
 };

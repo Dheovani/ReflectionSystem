@@ -34,10 +34,10 @@ namespace reflection_system
 				objectJson["parents"].append(parentName);
 
 			for (const auto& attribute : item.GetAttributes())
-				objectJson["attributes"].append(attribute.name);
+				objectJson["attributes"].append(std::string{ (attribute.isStatic ? "static " : "") + attribute.name });
 
 			for (const auto& method : item.GetMethods())
-				objectJson["methods"].append(method.sign);
+				objectJson["methods"].append(std::string{ (method.isStatic ? "static " : "") + method.sign });
 
 			if (fileStream.is_open())
 				fileStream << Json::writeString(writer, objectJson) << std::endl;
@@ -61,10 +61,10 @@ namespace reflection_system
 				objectYaml["parents"].push_back(parentName);
 
 			for (const auto& attribute : item.GetAttributes())
-				objectYaml["attributes"].push_back(attribute.name);
+				objectYaml["attributes"].push_back(std::string{ (attribute.isStatic ? "static " : "") + attribute.name });
 
 			for (const auto& method : item.GetMethods())
-				objectYaml["methods"].push_back(method.sign);
+				objectYaml["methods"].push_back(std::string{ (method.isStatic ? "static " : "") + method.sign });
 
 			if (fileStream.is_open())
 				fileStream << objectYaml << std::endl;
@@ -100,7 +100,7 @@ namespace reflection_system
 			tinyxml2::XMLElement* attributesElement = doc.NewElement("attributes");
 			for (const auto& attribute : item.GetAttributes()) {
 				tinyxml2::XMLElement* attributeElement = doc.NewElement("attribute");
-				attributeElement->SetText(attribute.name.c_str());
+				attributeElement->SetText(std::string{ (attribute.isStatic ? "static " : "") + attribute.name });
 				attributesElement->InsertEndChild(attributeElement);
 			}
 			root->InsertEndChild(attributesElement);
@@ -108,7 +108,7 @@ namespace reflection_system
 			tinyxml2::XMLElement* methodsElement = doc.NewElement("methods");
 			for (const auto& method : item.GetMethods()) {
 				tinyxml2::XMLElement* methodElement = doc.NewElement("method");
-				methodElement->SetText(method.sign.c_str());
+				methodElement->SetText(std::string{ (method.isStatic ? "static " : "") + method.name });
 				methodsElement->InsertEndChild(methodElement);
 			}
 			root->InsertEndChild(methodsElement);
