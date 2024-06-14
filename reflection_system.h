@@ -20,7 +20,7 @@
 #define PARENT_CLASSES(...) \
 private: \
 	using Parents = std::variant<__VA_ARGS__>; \
-	template <reflection_system::parent_concept _Ty> auto GetParent() const noexcept { return std::get<_Ty>(this); } \
+	template <reflection_system::parent_concept<This> _Ty> auto GetParent() const noexcept { return std::get<_Ty>(this); } \
 protected: \
 	inline void __classSpecificAssertations() const noexcept(false) override { FOR_EACH(ASSERTATION, __VA_ARGS__) } \
 	inline const std::vector<std::string> GetParentNames() const noexcept(true) override { return { FOR_EACH(STRINGIFY, __VA_ARGS__) }; }
