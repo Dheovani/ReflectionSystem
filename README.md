@@ -86,16 +86,21 @@ Here are some tasks and improvements planned for the C++ Introspection System:
 - [x] 🛠️ **Add Support for Parent Classes**: Implement introspection for parents, allowing dynamic data gathering.
 - [ ] 📚 **Documentation**: Expand the documentation with detailed usage examples and best practices.
 - [ ] 🧪 **Testing**: Increase unit test coverage to ensure the robustness and reliability of the system.
-- [ ] 🌐 **Multi-format Serialization Support**: Implement support for additional serialization formats, such as JSON.
+- [x] 🌐 **Multi-format Serialization Support**: Implement support for additional serialization formats, such as JSON.
 - [ ] 🔒 **Access Modifiers**: Find a way to verify if methods are either private, protected or public.
 
 Feel free to contribute to any of these tasks or suggest new features and improvements!
-
 
 ## 🎓 Contributing
 Contributions are welcome! Please feel free to submit a pull request or open an issue.
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+
+## 🙏 Acknowledgments
+Special thanks to the following projects for their inspiration and contributions to the C++ community:
+- [JsonCpp](https://github.com/open-source-parsers/jsoncpp)
+- [yaml-cpp](https://github.com/jbeder/yaml-cpp)
+- [tinyxml2](https://github.com/leethomason/tinyxml2)
 
 Happy Coding! 😊
