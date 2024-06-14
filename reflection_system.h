@@ -18,12 +18,15 @@
 	static_assert(reflection_system::instance_of<parent, This>, #parent " class is not extended by this class.");
 
 #define PARENT_CLASSES(...) \
-private: \
-	using Parents = std::variant<__VA_ARGS__>; \
-	template <reflection_system::parent_concept<This> _Ty> auto GetParent() const noexcept { return std::get<_Ty>(this); } \
 protected: \
+	using Parents = std::variant<__VA_ARGS__>; \
 	inline void __classSpecificAssertations() const noexcept(false) override { FOR_EACH(ASSERTATION, __VA_ARGS__) } \
-	inline const std::vector<std::string> GetParentNames() const noexcept(true) override { return { FOR_EACH(STRINGIFY, __VA_ARGS__) }; }
+	inline const std::vector<std::string> GetParentNames() const noexcept(true) override { return { FOR_EACH(STRINGIFY, __VA_ARGS__) }; }\
+public: \
+	template <reflection_system::parent_concept<This> _Ty> auto GetParent() const noexcept { \
+		Parents parents = _Ty{}; \
+		return std::get<_Ty>(parents); \
+	}
 
 #define MEMBER_LIST_BEGIN \
 	void FillMemberList() const noexcept(true) override {
@@ -114,7 +117,7 @@ namespace reflection_system
 	constexpr bool is_method = std::is_member_function_pointer_v<_Ty>;
 
 	template<class _Ty1, class _Ty2>
-	concept parent_concept = instance_of<_Ty2, _Ty1>;
+	concept parent_concept = instance_of<_Ty1, _Ty2>;
 
 	constexpr const std::string Clear(std::string token, const std::vector<std::string>& substrs) noexcept
 	{
