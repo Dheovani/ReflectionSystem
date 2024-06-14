@@ -5,6 +5,8 @@ using reflection_system::Reflective;
 
 class Base {};
 
+struct BaseStruct {};
+
 class Derived : public Reflective<Derived>, public Base
 {
     std::string str = "string";
@@ -28,8 +30,9 @@ public:
             std::cout << method.sign << std::endl;
     }
 
+    PARENT_CLASSES(Reflective<Derived>, Base, BaseStruct)
+
     MEMBER_LIST_BEGIN
-        PARENT_CLASS(Base)
         ATTRIBUTE(str)
         ATTRIBUTE(fl)
         METHOD(func1)

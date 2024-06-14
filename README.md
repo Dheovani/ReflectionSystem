@@ -32,7 +32,11 @@ Here's a quick example to get you started:
 
 using reflection_system::Reflective;
 
-class Derived : public Reflective<Derived>
+class Base {};
+
+struct BaseStruct {};
+
+class Derived : public Reflective<Derived>, public Base
 {
     std::string str = "string";
     long long fl = 5;
@@ -55,6 +59,8 @@ public:
             std::cout << method.sign << std::endl;
     }
 
+    PARENT_CLASSES(Reflective<Derived>, Base, BaseStruct)
+
     MEMBER_LIST_BEGIN
         ATTRIBUTE(str)
         ATTRIBUTE(fl)
@@ -68,8 +74,6 @@ int main(int argc, char** argv)
 {
     Derived derived;
     std::cout << derived << std::endl;
-    std::cout << derived.GetSize() << std::endl;
-    std::cout << derived.GetClassname() << std::endl;
 
     return 0;
 }
@@ -79,7 +83,7 @@ int main(int argc, char** argv)
 
 Here are some tasks and improvements planned for the C++ Introspection System:
 
-- [ ] 🛠️ **Add Support for Parent Classes**: Implement introspection for parents, allowing dynamic data gathering.
+- [x] 🛠️ **Add Support for Parent Classes**: Implement introspection for parents, allowing dynamic data gathering.
 - [ ] 📚 **Documentation**: Expand the documentation with detailed usage examples and best practices.
 - [ ] 🧪 **Testing**: Increase unit test coverage to ensure the robustness and reliability of the system.
 - [ ] 🌐 **Multi-format Serialization Support**: Implement support for additional serialization formats, such as JSON.

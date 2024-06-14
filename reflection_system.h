@@ -4,19 +4,33 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <variant>
 #include <typeinfo>
-#include <type_traits>
+
+#include "for_each.h"
 
 #define ID(v) typeid(v).name()
 
+#define STRINGIFY(v) #v,
+
+#define ASSERTATION(parent) \
+	static_assert(std::is_class_v<parent>, #parent " is not a valid class.");
+	// TODO: Find a way to static assert that all types mapped as parents are extended by derived class
+	// static_assert(reflection_system::instance_of<parent, This>, #parent " class is not extended by this class.");
+
+#define PARENT_CLASSES(...) \
+	FOR_EACH(ASSERTATION, __VA_ARGS__) \
+private: \
+	using Parents = std::variant<__VA_ARGS__>; \
+protected: \
+	void GetParentsNames(std::stringstream& ss) const noexcept(true) override { \
+		const std::vector<std::string> parents = { FOR_EACH(STRINGIFY, __VA_ARGS__) }; \
+		for (size_t i = 0; i < parents.size(); ++i) \
+			ss << (i == 0 ? " : " : "") << parents[i] << (i + 1 < parents.size() ? ", " : ""); \
+	}
+
 #define MEMBER_LIST_BEGIN \
 	void FillMemberList() const noexcept(true) override {
-
-#define PARENT_CLASS(parent) \
-{ \
-	static_assert(std::is_class_v<parent>, #parent " is not a valid class."); \
-	static_assert(reflection_system::instance_of<parent, This>, #parent " class is not extended by this."); \
-}
 
 #define ATTRIBUTE(attrib) \
 { \
@@ -89,8 +103,8 @@ namespace reflection_system
 		}
 	};
 
-	template <typename _Base, typename _Class>
-	constexpr bool instance_of = std::is_base_of_v<_Base, std::remove_pointer_t<_Class>>;
+	template <typename _Base, typename _Derived>
+	constexpr bool instance_of = std::is_base_of_v<_Base, std::remove_pointer_t<_Derived>>;
 
 	template <typename _Ty>
 	constexpr bool is_attribute = std::is_member_object_pointer_v<_Ty>;
@@ -152,6 +166,8 @@ namespace reflection_system
 	protected:
 		Reflective() = default;
 
+		virtual void GetParentsNames(std::stringstream& ss) const noexcept(true) {}
+
 	public:
 		~Reflective() = default;
 
@@ -161,10 +177,8 @@ namespace reflection_system
 			
 			std::vector<std::string> keywords = { "__ptr64", "__cdecl", "class", "struct", "reflection_system::" };
 			std::stringstream ss;
-			ss << GetClassname(true) << " : " << Clear(ID(Reflective), keywords);
-
-			/*for (size_t i = 0; i < parents.size(); ++i)
-				ss << parents[i] << (i + 1 < parents.size() ? ", " : "");*/
+			ss << GetClassname(true);
+			GetParentsNames(ss);
 
 			ss << std::endl << "{\n\tSize: " << size << std::endl << "Attributes:" << std::endl;
 			for (const Attribute<std::any>& attr : attributes)
