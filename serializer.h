@@ -10,10 +10,13 @@
 
 namespace reflection_system
 {
+	template <typename _Ty>
+	concept reflective_concept = reflection_system::is_reflective<_Ty>;
+
 	class Serializer
 	{
 	public:
-		template <typename _Ty>
+		template <reflective_concept _Ty>
 		Json::Value ToJson(const Reflective<_Ty>& item) const noexcept(true)
 		{
 			const std::string filename = std::string{ item.GetClassname() + ".json" };
@@ -41,7 +44,7 @@ namespace reflection_system
 			return objectJson;
 		}
 
-		template <typename _Ty>
+		template <reflective_concept _Ty>
 		YAML::Node ToYaml(const Reflective<_Ty>& item) const noexcept(true)
 		{
 			const std::string filename = std::string{ item.GetClassname() + ".yaml" };
@@ -68,7 +71,7 @@ namespace reflection_system
 			return objectYaml;
 		}
 
-		template <typename _Ty>
+		template <reflective_concept _Ty>
 		void ToXml(const Reflective<_Ty>& item) const noexcept(true)
 		{
 			tinyxml2::XMLDocument doc;
@@ -111,7 +114,7 @@ namespace reflection_system
 			doc.SaveFile(filename.c_str());
 		}
 
-		template <typename _Ty>
+		template <reflective_concept _Ty>
 		std::string ToString(const Reflective<_Ty>& item) const noexcept(true)
 		{
 			return std::string{ (const char*)item };
