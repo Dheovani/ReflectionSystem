@@ -113,9 +113,6 @@ namespace reflection_system
 	template <typename _Ty>
 	constexpr bool is_method = std::is_member_function_pointer_v<_Ty>;
 
-	template <typename _Ty>
-	constexpr bool is_reflective = instance_of<Reflective<_Ty>, _Ty>;
-
 	template<class _Ty1, class _Ty2>
 	concept parent_concept = instance_of<_Ty2, _Ty1>;
 
