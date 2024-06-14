@@ -36,7 +36,7 @@ class Base {};
 
 struct BaseStruct {};
 
-class Derived : public Reflective<Derived>, public Base
+class Derived : public Reflective<Derived>, public Base, public BaseStruct
 {
     std::string str = "string";
     long long fl = 5;

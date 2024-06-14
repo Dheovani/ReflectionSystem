@@ -14,20 +14,16 @@
 #define STRINGIFY(v) #v,
 
 #define ASSERTATION(parent) \
-	static_assert(std::is_class_v<parent>, #parent " is not a valid class.");
-	// TODO: Find a way to static assert that all types mapped as parents are extended by derived class
-	// static_assert(reflection_system::instance_of<parent, This>, #parent " class is not extended by this class.");
+	static_assert(std::is_class_v<parent>, #parent " is not a valid class."); \
+	static_assert(reflection_system::instance_of<parent, This>, #parent " class is not extended by this class.");
 
 #define PARENT_CLASSES(...) \
-	FOR_EACH(ASSERTATION, __VA_ARGS__) \
 private: \
 	using Parents = std::variant<__VA_ARGS__>; \
+	template <reflection_system::parent_concept _Ty> auto GetParent() const noexcept { return std::get<_Ty>(this); } \
 protected: \
-	void GetParentsNames(std::stringstream& ss) const noexcept(true) override { \
-		const std::vector<std::string> parents = { FOR_EACH(STRINGIFY, __VA_ARGS__) }; \
-		for (size_t i = 0; i < parents.size(); ++i) \
-			ss << (i == 0 ? " : " : "") << parents[i] << (i + 1 < parents.size() ? ", " : ""); \
-	}
+	inline void __classSpecificAssertations() const noexcept(false) override { FOR_EACH(ASSERTATION, __VA_ARGS__) } \
+	inline const std::vector<std::string> GetParentNames() const noexcept(true) override { return { FOR_EACH(STRINGIFY, __VA_ARGS__) }; }
 
 #define MEMBER_LIST_BEGIN \
 	void FillMemberList() const noexcept(true) override {
@@ -112,6 +108,9 @@ namespace reflection_system
 	template <typename _Ty>
 	constexpr bool is_method = std::is_member_function_pointer_v<_Ty>;
 
+	template<class _Ty1, class _Ty2>
+	concept parent_concept = instance_of<_Ty2, _Ty1>;
+
 	constexpr const std::string Clear(std::string token, const std::vector<std::string>& substrs) noexcept
 	{
 		for (const std::string& substr : substrs) {
@@ -162,11 +161,15 @@ namespace reflection_system
 		mutable std::string cache;
 		mutable std::vector<Method<std::any>> methods = {};
 		mutable std::vector<Attribute<std::any>> attributes = {};
-		
-	protected:
-		Reflective() = default;
 
-		virtual void GetParentsNames(std::stringstream& ss) const noexcept(true) {}
+	protected:
+		Reflective() { __classSpecificAssertations(); }
+
+		virtual inline const std::vector<std::string> GetParentNames() const noexcept(true) { return {}; }
+
+		virtual inline void __classSpecificAssertations() const noexcept(false) {}
+
+		virtual void FillMemberList() const noexcept(true) {}
 
 	public:
 		~Reflective() = default;
@@ -175,10 +178,12 @@ namespace reflection_system
 			if (GetMethods().empty() || GetAttributes().empty())
 				FillMemberList();
 			
-			std::vector<std::string> keywords = { "__ptr64", "__cdecl", "class", "struct", "reflection_system::" };
 			std::stringstream ss;
 			ss << GetClassname(true);
-			GetParentsNames(ss);
+
+			auto parents = GetParentNames();
+			for (size_t i = 0; i < parents.size(); ++i)
+				ss << (i == 0 ? " : " : "") << parents[i] << (i + 1 < parents.size() ? ", " : "");
 
 			ss << std::endl << "{\n\tSize: " << size << std::endl << "Attributes:" << std::endl;
 			for (const Attribute<std::any>& attr : attributes)
@@ -191,8 +196,6 @@ namespace reflection_system
 			ss << "}" << std::endl;
 			return (cache = ss.str()).c_str();
 		}
-
-		virtual void FillMemberList() const noexcept(true) {}
 
 		template <typename... Args>
 		inline _Class GetInstance(Args... args) const noexcept(true) { return _Class(args...); }
