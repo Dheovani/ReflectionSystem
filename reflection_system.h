@@ -11,8 +11,6 @@
 
 #define ID(v) typeid(v).name()
 
-#define STRINGIFY(v) #v,
-
 #define ASSERTATION(parent) \
 	static_assert(std::is_class_v<parent>, #parent " is not a valid class."); \
 	static_assert(reflection_system::instance_of<parent, This>, #parent " class is not extended by this class.");
@@ -28,29 +26,42 @@ public: \
 		return std::get<_Ty>(parents); \
 	}
 
-#define MEMBER_LIST_BEGIN \
-	void FillMemberList() const noexcept(true) override {
-
 #define ATTRIBUTE(attrib) \
 { \
-	static_assert(reflection_system::is_attribute<decltype(&This::attrib)>, "Not an attribute."); \
+	static_assert(reflection_system::is_attribute<decltype(&This::attrib)>, #attrib " is not an attribute."); \
 	std::string name = #attrib; \
 	name.erase(name.begin(), std::find_if(name.begin(), name.end(), [](int ch) { return !std::isspace(ch) && (char)ch != '&'; })); \
 	AddAttribute(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, ID(&This::attrib)), \
 		!std::is_member_pointer_v<decltype(&This::attrib)>, &This::attrib); \
 }
 
+#define ATTRIBUTES(...) \
+protected: void FillMethodList() const noexcept override { FOR_EACH(ATTRIBUTE, __VA_ARGS__) } \
+public: \
+	template <typename _Ty> _Ty GetAttribute(const std::string& name) const noexcept(false) { \
+		if (GetAttributes().empty()) FillAttribList(); \
+		const hash key = reflection_system::HashCode(name.c_str()); \
+		for (const auto& attrib : GetAttributes()) { \
+			if (attrib.key == key) { \
+				if (attrib.isStatic) return *(std::any_cast<_Ty*>(attrib.value)); \
+				else return this->*(std::any_cast<_Ty This::*>(attrib.value)); \
+			} \
+		} \
+		throw std::runtime_error("Attribute not found"); \
+	}
+
 #define METHOD(method) \
 { \
-	static_assert(reflection_system::is_function<decltype(&This::method)>, "Not a method."); \
+	static_assert(reflection_system::is_function<decltype(&This::method)>, #method " is not a function."); \
 	std::string name = #method; \
 	name.erase(name.begin(), std::find_if(name.begin(), name.end(), [](int ch) { return !std::isspace(ch) && (char)ch != '&'; })); \
 	AddMethod(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, ID(&This::method)), \
 		!std::is_member_pointer_v<decltype(&This::method)>, &This::method); \
 }
 
-#define MEMBER_LIST_END \
-	}
+#define METHODS(...) \
+protected: \
+	void FillAttribList() const noexcept override { FOR_EACH(METHOD, __VA_ARGS__) }
 
 typedef unsigned long long hash;
 
@@ -174,17 +185,19 @@ namespace reflection_system
 		Reflective() { __class_specific_assertations__(); }
 
 		virtual inline const std::vector<std::string> GetParentNames() const noexcept(true) { return {}; }
-
 		virtual inline void __class_specific_assertations__() const noexcept(false) {}
-
-		virtual void FillMemberList() const noexcept(true) {}
+		virtual void FillAttribList() const noexcept {}
+		virtual void FillMethodList() const noexcept {}
 
 	public:
 		~Reflective() = default;
 
-		operator const char* () const {
-			if (GetMethods().empty() || GetAttributes().empty())
-				FillMemberList();
+		operator const char* () const
+		{
+			if (GetMethods().empty() || GetAttributes().empty()) {
+				FillAttribList();
+				FillMethodList();
+			}
 			
 			std::stringstream ss;
 			ss << GetClassname(true);
@@ -252,6 +265,19 @@ namespace reflection_system
 				return;
 
 			attributes.push_back(Attribute<std::any>{ key, name, isStatic, std::make_any<_Ty>(value) });
+		}
+
+		template <typename _Ty>
+		_Ty GetMethod(const std::string& name) const noexcept(false)
+		{
+			if (GetMethods().empty()) FillMethodList();
+
+			const hash key = HashCode(name.c_str());
+			for (const auto& method : GetMethods()) {
+				if (method.key == key) return std::any_cast<_Ty>(method.value);
+			}
+
+			throw std::runtime_error("Method not found");
 		}
 
 		inline constexpr bool HasMethod(const std::string& name) const noexcept

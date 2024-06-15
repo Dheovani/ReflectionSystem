@@ -21,32 +21,35 @@ public:
     Derived(const std::string& s, const long long& f) : str(s)
     {}
 
-    static void StaticMethod(void) {}
+    static void StaticMethod(void) { std::cout << "In the static method" << std::endl; }
 
     void SetStr(const std::string& s) { this->str = s; }
 
     void PrintMethods() const {
-        FillMemberList();
+        FillMethodList();
         for (auto& method : GetMethods())
             std::cout << method.sign << std::endl;
     }
 
     PARENT_CLASSES(Reflective<Derived>, Base, BaseStruct)
-
-    MEMBER_LIST_BEGIN
-        ATTRIBUTE(str)
-        ATTRIBUTE(fl)
-        METHOD(func1)
-        METHOD(func2)
-        METHOD(StaticMethod)
-        METHOD(PrintMethods)
-    MEMBER_LIST_END
+    ATTRIBUTES(str, fl)
+    METHODS(func1, func2, StaticMethod, PrintMethods)
 };
 
 int main(int argc, char** argv)
 {
     Derived derived;
     std::cout << derived << std::endl;
+
+    (*(derived.GetMethod<void(*)(void)>("StaticMethod")))();
+
+    auto method = derived.GetMethod<void(Derived::*)(void)const>("PrintMethods");
+    (derived.*method)();
+
+    std::cout << derived.GetAttribute<long long const>("fl") << std::endl;
+    std::cout << derived.GetAttribute<std::string>("str") << std::endl;
+    derived.SetStr("Other string");
+    std::cout << derived.GetAttribute<std::string>("str") << std::endl;
 
     return 0;
 }

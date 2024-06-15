@@ -2,6 +2,8 @@
 
 #define EXPAND(x) x
 
+#define STRINGIFY(v) #v,
+
 #define FOR_EACH_1(what, x, ...) what(x)
 #define FOR_EACH_2(what, x, ...) what(x) EXPAND(FOR_EACH_1(what, __VA_ARGS__))
 #define FOR_EACH_3(what, x, ...) what(x) EXPAND(FOR_EACH_2(what, __VA_ARGS__))
@@ -59,7 +61,7 @@
                  _31,_32,_33,_34,_35,_36,_37,_38,_39,_40, \
                  _41,_42,_43,_44,_45,_46,_47,_48,_49,_50, NAME, ...) NAME
 
-// Please, do not extend over 50 classes or this may not work
+// Please, increment the amount of macros if there's the need for over 50 operations
 #define FOR_EACH(action, ...) \
     EXPAND(GET_MACRO(__VA_ARGS__, \
         FOR_EACH_50, FOR_EACH_49, FOR_EACH_48, FOR_EACH_47, FOR_EACH_46, \
