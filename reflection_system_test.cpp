@@ -6,9 +6,18 @@
 #include "serializer.h"
 #include "reflection_system.h"
 
+using reflection_system::Reflective;
+
 class ReflectionSystemTest : public ::testing::Test {
 public:
-    class TestClass : public reflection_system::Reflective<TestClass> {
+    class Base {
+        int baseAttr = 5;
+
+    public:
+        int getAttr() { return baseAttr; }
+    };
+
+    class TestClass : public Reflective<TestClass>, public Base {
     public:
         int attr1 = 0;
         static const int attr2;
@@ -20,6 +29,8 @@ public:
         void method1() { attr1 = 1; }
         int method2() { return attr1; }
 
+        PARENT_CLASSES(Reflective<TestClass>, Base)
+        ATTRIBUTES(attr1, attr2)
         METHODS(method1, method2)
     };
 
@@ -99,6 +110,12 @@ TEST_F(ReflectionSystemTest, GetAttributes)
     obj->AddAttribute(reflection_system::HashCode("attr1"), "int attr1", false, &TestClass::attr1);
     auto attributes = obj->GetAttributes();
     EXPECT_EQ(attributes.size(), 1);
+}
+
+TEST_F(ReflectionSystemTest, GetParent)
+{
+    TestClass test;
+    EXPECT_EQ(test.GetParent<Base>().getAttr(), 5);
 }
 
 // namespace reflection_system's tests
