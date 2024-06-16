@@ -36,19 +36,7 @@ public: \
 }
 
 #define ATTRIBUTES(...) \
-protected: void FillMethodList() const noexcept override { FOR_EACH(ATTRIBUTE, __VA_ARGS__) } \
-public: \
-	template <typename _Ty> _Ty GetAttribute(const std::string& name) const noexcept(false) { \
-		if (GetAttributes().empty()) FillAttribList(); \
-		const hash key = reflection_system::HashCode(name.c_str()); \
-		for (const auto& attrib : GetAttributes()) { \
-			if (attrib.key == key) { \
-				if (attrib.isStatic) return *(std::any_cast<_Ty*>(attrib.value)); \
-				else return this->*(std::any_cast<_Ty This::*>(attrib.value)); \
-			} \
-		} \
-		throw std::runtime_error("Attribute not found"); \
-	}
+protected: void FillMethodList() const noexcept override { FOR_EACH(ATTRIBUTE, __VA_ARGS__) }
 
 #define METHOD(method) \
 { \
@@ -60,8 +48,7 @@ public: \
 }
 
 #define METHODS(...) \
-protected: \
-	void FillAttribList() const noexcept override { FOR_EACH(METHOD, __VA_ARGS__) }
+protected: void FillAttribList() const noexcept override { FOR_EACH(METHOD, __VA_ARGS__) }
 
 typedef unsigned long long hash;
 
@@ -184,6 +171,8 @@ namespace reflection_system
 	protected:
 		Reflective() { __class_specific_assertations__(); }
 
+		const _Class* GetClass() const noexcept(true) { return static_cast<const _Class*>(this); }
+
 		virtual inline const std::vector<std::string> GetParentNames() const noexcept(true) { return {}; }
 		virtual inline void __class_specific_assertations__() const noexcept(false) {}
 		virtual void FillAttribList() const noexcept {}
@@ -268,7 +257,7 @@ namespace reflection_system
 		}
 
 		template <typename _Ty>
-		_Ty GetMethod(const std::string& name) const noexcept(false)
+		constexpr _Ty GetMethod(const std::string& name) const noexcept(false)
 		{
 			if (GetMethods().empty()) FillMethodList();
 
@@ -278,6 +267,24 @@ namespace reflection_system
 			}
 
 			throw std::runtime_error("Method not found");
+		}
+
+		template <typename _Ty>
+		constexpr _Ty GetAttribute(const std::string& name) const noexcept(false)
+		{
+			if (GetAttributes().empty()) FillAttribList();
+			
+			const hash key = HashCode(name.c_str());
+			for (const auto& attrib : GetAttributes()) {
+				if (attrib.key == key) {
+					if (attrib.isStatic)
+						return *(std::any_cast<_Ty*>(attrib.value));
+					else
+						return GetClass()->*(std::any_cast<_Ty This::*>(attrib.value));
+				}
+			}
+			
+			throw std::runtime_error("Attribute not found"); \
 		}
 
 		inline constexpr bool HasMethod(const std::string& name) const noexcept
