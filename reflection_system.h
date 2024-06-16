@@ -19,11 +19,11 @@
 protected: \
 	using Parents = std::variant<__VA_ARGS__>; \
 	inline void __class_specific_assertations__() const noexcept(false) override { FOR_EACH(ASSERTATION, __VA_ARGS__) } \
-	inline const std::vector<std::string> GetParentNames() const noexcept(true) override { return { FOR_EACH(STRINGIFY, __VA_ARGS__) }; }\
+	inline const std::vector<std::string> GetParentNames() const noexcept(true) override { return { FOR_EACH(STRINGIFY, __VA_ARGS__) }; } \
 public: \
 	template <reflection_system::parent_concept<This> _Ty> auto GetParent() const noexcept { \
-		Parents parents = _Ty{}; \
-		return std::get<_Ty>(parents); \
+		Parents parent = static_cast<_Ty>(*this); \
+		return std::get<_Ty>(parent); \
 	}
 
 #define ATTRIBUTE(attrib) \
@@ -169,7 +169,13 @@ namespace reflection_system
 		mutable std::vector<Attribute<std::any>> attributes = {};
 
 	protected:
-		Reflective() { __class_specific_assertations__(); }
+		Reflective()
+		{
+			__class_specific_assertations__();
+
+			FillAttribList();
+			FillMethodList();
+		}
 
 		virtual inline const std::vector<std::string> GetParentNames() const noexcept(true) { return {}; }
 		virtual inline void __class_specific_assertations__() const noexcept(false) {}
@@ -284,7 +290,7 @@ namespace reflection_system
 				}
 			}
 			
-			throw std::runtime_error("Attribute not found"); \
+			throw std::runtime_error("Attribute not found");
 		}
 
 		inline constexpr bool HasMethod(const std::string& name) const noexcept
