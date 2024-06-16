@@ -171,8 +171,6 @@ namespace reflection_system
 	protected:
 		Reflective() { __class_specific_assertations__(); }
 
-		const _Class* GetClass() const noexcept(true) { return static_cast<const _Class*>(this); }
-
 		virtual inline const std::vector<std::string> GetParentNames() const noexcept(true) { return {}; }
 		virtual inline void __class_specific_assertations__() const noexcept(false) {}
 		virtual void FillAttribList() const noexcept {}
@@ -211,6 +209,8 @@ namespace reflection_system
 		inline _Class GetInstance(Args... args) const noexcept(true) { return _Class(args...); }
 
 		inline _Class GetInstance(void) const noexcept(true) { return _Class(); }
+
+		inline const _Class* GetClass() const noexcept(true) { return static_cast<const _Class*>(this); }
 
 		constexpr std::string GetClassname(bool ignoreType = false) const noexcept
 		{
