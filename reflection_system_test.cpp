@@ -1,13 +1,16 @@
 #include <string>
 #include <gtest/gtest.h>
 
+#include "logger.h"
+#include "logger.cpp"
+#include "serializer.h"
 #include "reflection_system.h"
 
 class ReflectionSystemTest : public ::testing::Test {
 public:
     class TestClass : public reflection_system::Reflective<TestClass> {
     public:
-        int attr1;
+        int attr1 = 0;
         static const int attr2;
 
         TestClass() = default;
@@ -127,4 +130,41 @@ TEST(ReflectionSystemFunctions, is_function)
 TEST(ReflectionSystemFunctions, is_attribute)
 {
     EXPECT_TRUE(reflection_system::is_attribute<decltype(&ReflectionSystemTest::TestClass::attr2)>);
+}
+
+TEST_F(ReflectionSystemTest, ToJson)
+{
+    TestClass mock;
+    reflection_system::Serializer serializer;
+    Json::Value json = serializer.ToJson(mock);
+
+    EXPECT_EQ(json["name"].asString(), "TestClass");
+    EXPECT_EQ(json["size"].asInt(), sizeof(TestClass));
+    EXPECT_EQ(json["parents"].size(), 1);
+    EXPECT_EQ(json["attributes"].size(), 2);
+    EXPECT_EQ(json["methods"].size(), 2);
+}
+
+TEST_F(ReflectionSystemTest, ToYaml)
+{
+    TestClass mock;
+    reflection_system::Serializer serializer;
+    YAML::Node yaml = serializer.ToYaml(mock);
+
+    EXPECT_EQ(yaml["name"].as<std::string>(), "TestClass");
+    EXPECT_EQ(yaml["size"].as<int>(), sizeof(TestClass));
+    EXPECT_EQ(yaml["parents"].size(), 1);
+    EXPECT_EQ(yaml["attributes"].size(), 2);
+    EXPECT_EQ(yaml["methods"].size(), 2);
+}
+
+TEST_F(ReflectionSystemTest, ToString)
+{
+    TestClass mock;
+    reflection_system::Serializer serializer;
+    std::string str = serializer.ToString(mock);
+
+    EXPECT_FALSE(str.empty());
+    EXPECT_TRUE(str.find("MockReflective") != std::string::npos);
+    EXPECT_TRUE(str.find("42") != std::string::npos);
 }
