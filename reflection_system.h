@@ -9,7 +9,7 @@
 
 #include "for_each.h"
 
-#define ID(v) typeid(v).name()
+#define NAME(v) typeid(v).name()
 
 #define ASSERTATION(parent) \
 	static_assert(std::is_class_v<parent>, #parent " is not a valid class."); \
@@ -18,7 +18,7 @@
 #define PARENT_CLASSES(...) \
 protected: \
 	using Parents = std::variant<__VA_ARGS__>; \
-	inline void __class_specific_assertations__() const noexcept(false) override { FOR_EACH(ASSERTATION, __VA_ARGS__) } \
+	inline void __parent_assertations__() const noexcept(false) override { FOR_EACH(ASSERTATION, __VA_ARGS__) } \
 	inline const std::vector<std::string> GetParentNames() const noexcept(true) override { return { FOR_EACH(STRINGIFY, __VA_ARGS__) }; } \
 public: \
 	template <reflection_system::parent_concept<This> _Ty> auto GetParent() const noexcept { \
@@ -31,7 +31,7 @@ public: \
 	static_assert(reflection_system::is_attribute<decltype(&This::attrib)>, #attrib " is not an attribute."); \
 	std::string name = #attrib; \
 	name.erase(name.begin(), std::find_if(name.begin(), name.end(), [](int ch) { return !std::isspace(ch) && (char)ch != '&'; })); \
-	AddAttribute(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, ID(&This::attrib)), \
+	AddAttribute(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, NAME(&This::attrib)), \
 		!std::is_member_pointer_v<decltype(&This::attrib)>, &This::attrib); \
 }
 
@@ -43,7 +43,7 @@ protected: void FillMethodList() const noexcept override { FOR_EACH(ATTRIBUTE, _
 	static_assert(reflection_system::is_function<decltype(&This::method)>, #method " is not a function."); \
 	std::string name = #method; \
 	name.erase(name.begin(), std::find_if(name.begin(), name.end(), [](int ch) { return !std::isspace(ch) && (char)ch != '&'; })); \
-	AddMethod(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, ID(&This::method)), \
+	AddMethod(reflection_system::HashCode(name.c_str()), reflection_system::Normalize(name, NAME(&This::method)), \
 		!std::is_member_pointer_v<decltype(&This::method)>, &This::method); \
 }
 
@@ -161,8 +161,8 @@ namespace reflection_system
 	template <typename _Class>
 	class Reflective
 	{
-		const size_t size = sizeof(_Class);
-		const std::string classname = ID(_Class);
+		const size_t size;
+		const std::string classname;
 
 		mutable std::string cache;
 		mutable std::vector<Method<std::any>> methods = {};
@@ -170,15 +170,16 @@ namespace reflection_system
 
 	protected:
 		Reflective()
+			: size(sizeof(_Class)), classname(NAME(_Class))
 		{
-			__class_specific_assertations__();
+			__parent_assertations__();
 
 			FillAttribList();
 			FillMethodList();
 		}
 
 		virtual inline const std::vector<std::string> GetParentNames() const noexcept(true) { return {}; }
-		virtual inline void __class_specific_assertations__() const noexcept(false) {}
+		virtual inline void __parent_assertations__() const noexcept(false) {}
 		virtual void FillAttribList() const noexcept {}
 		virtual void FillMethodList() const noexcept {}
 

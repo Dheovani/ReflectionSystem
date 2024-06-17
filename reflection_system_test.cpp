@@ -73,8 +73,14 @@ TEST_F(ReflectionSystemTest, GetSize)
 TEST_F(ReflectionSystemTest, AddMethodAndGetMethod)
 {
     obj->AddMethod(reflection_system::HashCode("method1"), "void method1()", false, &TestClass::method1);
-    auto method = obj->GetMethod<void(TestClass::*)()>("method1");
-    EXPECT_NO_THROW((obj->*method)());
+    obj->AddMethod(reflection_system::HashCode("method2"), "int method2()", false, &TestClass::method2);
+
+    auto method2 = obj->GetMethod<int(TestClass::*)()>("method2");
+    EXPECT_EQ((obj->*method2)(), 0);
+
+    auto method1 = obj->GetMethod<void(TestClass::*)()>("method1");
+    EXPECT_NO_THROW((obj->*method1)());
+    EXPECT_EQ((obj->*method2)(), 1);
 }
 
 TEST_F(ReflectionSystemTest, AddAttributeAndGetAttribute)
