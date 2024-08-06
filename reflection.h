@@ -79,19 +79,11 @@ namespace reflection
 	template <typename _Ty>
 	constexpr bool is_function = std::is_member_function_pointer_v<_Ty> || std::is_function_v<std::remove_pointer_t<_Ty>>;
 
-	template <typename _Var, typename _Ty, size_t _Idx>
-	struct variant_index;
+	template <typename _Ty, typename _Var, size_t _Idx>
+	constexpr size_t GetVariantIndex();
 
-	template <typename _Var, typename _Ty, size_t _Idx = 0>
-	struct variant_index {
-		static_assert(_Idx < std::variant_size_v<_Var>, "Unknown variant type");
-		static constexpr size_t value = std::is_same_v<std::variant_alternative_t<_Idx, _Var>, _Ty>
-			? _Idx
-			: variant_index<_Var, _Ty, _Idx + 1>::value;
-	};
-
-	template <typename _Var, typename _Ty, size_t _Idx = 0>
-	constexpr size_t variant_index_v = variant_index<_Var, _Ty, _Idx>::value;
+	template <typename _Ty, typename _Var, size_t _Idx = 0>
+	constexpr size_t get_variant_index_v = reflection::GetVariantIndex<_Ty, _Var, _Idx + 1>();
 
 	template <typename _Ty, class _Class>
 	struct remove_class_pointer {
@@ -106,8 +98,8 @@ namespace reflection
 	template <typename _Ty, class _Class>
 	using remove_class_pointer_t = typename remove_class_pointer<_Ty, _Class>::type;
 
-	template <class _Ty1, class _Ty2>
-	concept parent_concept = instance_of<_Ty1, _Ty2>;
+	template <typename _Base, typename _Derived>
+	concept parent_concept = instance_of<_Base, _Derived>;
 
 	constexpr std::string Clear(std::string token, const std::vector<std::string>& substrs) noexcept;
 
@@ -116,4 +108,20 @@ namespace reflection
 	constexpr hash HashCode(const char* key) noexcept(true);
 
 	constexpr hash HashCode(const std::string& key) noexcept(true);
+
+	template <typename _Ty, typename _Var, size_t _Idx = 0>
+	constexpr size_t GetVariantIndex()
+	{
+		static_assert(std::variant_size_v<_Var> > _Idx, "Variant index out of bounds");
+
+		if constexpr (_Idx >= std::variant_size_v<_Var>)
+			return std::variant_npos;
+		else if constexpr (std::is_same_v<std::variant_alternative_t<_Idx, _Var>, _Ty>)
+			return _Idx;
+		else
+			return reflection::GetVariantIndex<_Ty, _Var, _Idx + 1>();
+	}
+
+	class Serializable
+	{};
 }

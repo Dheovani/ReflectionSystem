@@ -1,6 +1,8 @@
 #include <iostream>
 #include "reflection.h"
 
+namespace refl = reflection;
+
 class Base {};
 
 struct BaseStruct {};
@@ -32,33 +34,25 @@ public:
     )
 
     template <typename _Ty>
-    _Ty GetAttribute(const std::string& name) const {
+    _Ty GetAttribute(const std::string& name) const
+    {
         for (const auto& pair : GetAttributes()) {
             if (pair.first == name) {
-                return std::is_convertible_v<decltype(pair.first), _Ty type::*>
-                    ? this->*(std::get<_Ty type::*>(pair.first))
-                    : *(std::get<_Ty*>(pair.first));
+                return _Ty{};
+                //return std::is_convertible_v<decltype(pair.second), _Ty type::*>
+                    //? this->*(std::get<_Ty type::*>(pair.second))
+                    //: *(std::get<_Ty*>(pair.second));
             }
         }
 
-        throw std::runtime_error("Attribute not found");
+        throw std::runtime_error("Attribute not found"); 
     }
 };
 
 int main(void)
 {
-    Derived derived = Derived::GetInstance("String nova");
-
-    auto str = derived.GetAttribute<std::string>("str");
-    //std::cout << derived.*(std::get<std::string Derived::*>(str)) << std::endl;
-
-    auto fl = derived.GetAttribute("fl");
-    std::cout << *(std::get<const long long*>(fl)) << std::endl;
-
-    std::cout << TName(&Derived::StaticMethod) << std::endl;
-    std::cout << typeid(std::remove_pointer_t<decltype(&Derived::StaticMethod)>).name() << std::endl;
-    std::cout << TName(&Derived::SetStr) << std::endl;
-    std::cout << typeid(reflection::remove_class_pointer_t<decltype(&Derived::SetStr), Derived>).name() << std::endl;
+    using type = std::variant<int, char, std::string, long long, double>;
+    std::cout << refl::get_variant_index_v<char, type> << std::endl;
 
     return 0;
 }
