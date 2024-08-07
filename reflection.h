@@ -20,7 +20,10 @@
 #define PAssert(parent) \
 	static_assert(std::is_class_v<parent>, #parent " is not a valid class.");
 
-#define Parents(...) ForEach(PAssert, __VA_ARGS__)
+#define Parents(...) \
+	ForEach(PAssert, __VA_ARGS__) \
+	inline static std::vector<std::string> GetParents() noexcept { \
+		return { ForEachWS(Stringify, __VA_ARGS__) }; }
 
 #define AAssert(attrib) \
 	static_assert(reflection::is_attribute<decltype(&type::attrib)>, #attrib " is not an attribute.");
@@ -167,7 +170,4 @@ namespace reflection
 		else
 			return reflection::GetVariantIndex<_Ty, _Var, _Idx + 1>();
 	}
-
-	class Serializable
-	{};
 }

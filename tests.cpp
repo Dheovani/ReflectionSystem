@@ -1,6 +1,7 @@
 #include <string>
 #include <variant>
 #include "reflection.h"
+#include "serializer.h"
 #include <gtest/gtest.h>
 
 class ReflectionSystemTest: public ::testing::Test
@@ -62,12 +63,12 @@ TEST_F(ReflectionSystemTest, GetInstanceWithParams)
     EXPECT_EQ(instance.attr1, 5);
 }
 
-TEST_F(ReflectionSystemTest, GetClassname)
+TEST_F(ReflectionSystemTest, Classname)
 {
     EXPECT_EQ(TestClass::Classname(), "ReflectionSystemTest::TestClass");
 }
 
-TEST_F(ReflectionSystemTest, GetSize)
+TEST_F(ReflectionSystemTest, Size)
 {
     EXPECT_EQ(TestClass::Size(), sizeof(TestClass));
 }
@@ -194,39 +195,41 @@ TEST(ReflectionSystemFunctions, remove_class_pointer)
     ASSERT_TRUE(condition);
 }
 
-// TODO: serializer tests
-//TEST_F(ReflectionSystemTest, ToJson)
-//{
-//    ReflectionSystemTest::TestClass mock;
-//    reflection_system::Serializer serializer;
-//    Json::Value json = serializer.ToJson(mock);
-//
-//    EXPECT_EQ(json["name"].asString(), "ReflectionSystemTest::TestClass");
-//    EXPECT_EQ(json["size"].asInt(), sizeof(TestClass));
-//    EXPECT_EQ(json["parents"].size(), 2);
-//}
-//
-//TEST_F(ReflectionSystemTest, ToYaml)
-//{
-//    ReflectionSystemTest::TestClass mock;
-//    reflection_system::Serializer serializer;
-//    YAML::Node yaml = serializer.ToYaml(mock);
-//
-//    EXPECT_EQ(yaml["name"].as<std::string>(), "ReflectionSystemTest::TestClass");
-//    EXPECT_EQ(yaml["size"].as<int>(), sizeof(TestClass));
-//    EXPECT_EQ(yaml["parents"].size(), 2);
-//}
-//
-//TEST_F(ReflectionSystemTest, ToString)
-//{
-//    ReflectionSystemTest::TestClass mock;
-//    reflection_system::Serializer serializer;
-//    std::string str = serializer.ToString(mock);
-//
-//    EXPECT_FALSE(str.empty());
-//    EXPECT_TRUE(str.find("ReflectionSystemTest::TestClass") != std::string::npos);
-//    EXPECT_TRUE(str.find("Size: 168") != std::string::npos);
-//}
+// serializer tests
+TEST_F(ReflectionSystemTest, ToJson)
+{
+    reflection::Serializer serializer;
+    Json::Value json = serializer.ToJson<ReflectionSystemTest::TestClass>();
+
+    EXPECT_EQ(json["name"].asString(), "ReflectionSystemTest::TestClass");
+    EXPECT_EQ(json["size"].asInt(), sizeof(TestClass));
+    EXPECT_EQ(json["parents"].size(), 1);
+}
+
+TEST_F(ReflectionSystemTest, ToYaml)
+{
+    reflection::Serializer serializer;
+    YAML::Node yaml = serializer.ToYaml<ReflectionSystemTest::TestClass>();
+
+    EXPECT_EQ(yaml["name"].as<std::string>(), "ReflectionSystemTest::TestClass");
+    EXPECT_EQ(yaml["size"].as<int>(), sizeof(TestClass));
+    EXPECT_EQ(yaml["parents"].size(), 1);
+}
+
+TEST_F(ReflectionSystemTest, ToString)
+{
+    reflection::Serializer serializer;
+    std::string str = serializer.ToString<ReflectionSystemTest::TestClass>();
+
+    EXPECT_FALSE(str.empty());
+    EXPECT_TRUE(str.find("ReflectionSystemTest::TestClass") != std::string::npos);
+}
+
+TEST_F(ReflectionSystemTest, is_serializable)
+{
+    EXPECT_TRUE(reflection::is_serializable<ReflectionSystemTest::TestClass>);
+    EXPECT_FALSE(reflection::is_serializable<ReflectionSystemTest>);
+}
 
 int main(int argc, char** argv)
 {
