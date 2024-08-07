@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(ReflectionSystem)
 
 set(CMAKE_CXX_STANDARD 20)
-set(SOURCES main.cpp reflection_system.h for_each.h serializer.h logger.h logger.cpp)
+set(SOURCES main.cpp reflection.h for_each.h)
 
 enable_testing()
 
@@ -17,7 +17,7 @@ target_link_libraries(ReflectionSystem PRIVATE
     yaml-cpp::yaml-cpp
     tinyxml2::tinyxml2)
 
-set(TEST_SOURCES reflection_system_test.cpp)
+set(TEST_SOURCES tests.cpp)
 add_executable(ReflectionSystemTest ${TEST_SOURCES})
 target_link_libraries(ReflectionSystemTest PRIVATE
     JsonCpp::JsonCpp

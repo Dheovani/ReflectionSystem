@@ -4,8 +4,8 @@
 
 #define AddSem(x) x,
 
-#define x1(what, x, ...) what(x)
-#define x2(what, op, x, ...) op(what(x)) Expand(x1(what, __VA_ARGS__))
+#define x1(what, op, x, ...) op(what(x))
+#define x2(what, op, x, ...) op(what(x)) Expand(x1(what, Expand, __VA_ARGS__))
 #define x3(what, op, x, ...) op(what(x)) Expand(x2(what, op, __VA_ARGS__))
 #define x4(what, op, x, ...) op(what(x)) Expand(x3(what, op, __VA_ARGS__))
 #define x5(what, op, x, ...) op(what(x)) Expand(x4(what, op, __VA_ARGS__))

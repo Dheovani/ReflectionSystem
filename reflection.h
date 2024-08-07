@@ -32,6 +32,7 @@ public: \
 	attrib_types GetAttribute(const std::string& name) const { \
 		for (const auto& pair : GetAttributes()) { if (pair.first == name) return pair.second; } \
 		throw std::runtime_error("Attribute not found"); } \
+	template <typename _Ty> _Ty GetAttribute(const std::string& name) const { return std::get<_Ty>(this->GetAttribute(name)); } \
 	inline static reflection::map<std::string, attrib_types> GetAttributes() noexcept { \
 		return reflection::map<std::string, attrib_types>{ ForEachWS(Pair, __VA_ARGS__) }; } \
 	inline static bool HasAttribute(const std::string& name) noexcept { \
@@ -48,6 +49,7 @@ public: \
 	method_types GetMethod(const std::string& name) const { \
 		for (const auto& pair : GetMethods()) { if (pair.first == name) return pair.second; } \
 		throw std::runtime_error("Method not found"); } \
+	template <typename _Ty> _Ty GetMethod(const std::string& name) const { return std::get<_Ty>(this->GetMethod(name)); } \
 	inline static reflection::map<std::string, method_types> GetMethods() noexcept { \
 		return reflection::map<std::string, method_types>{ ForEachWS(Pair, __VA_ARGS__) }; } \
 	inline static bool HasMethod(const std::string& name) noexcept { \
@@ -74,16 +76,19 @@ namespace reflection
 	constexpr bool instance_of = std::is_base_of_v<_Base, std::remove_pointer_t<_Derived>>;
 
 	template <typename _Ty>
-	constexpr bool is_attribute = std::is_member_object_pointer_v<_Ty> || std::is_object_v<std::remove_pointer_t<_Ty>>;
+	constexpr bool is_attribute = (std::is_member_object_pointer_v<_Ty> || std::is_object_v<std::remove_pointer_t<_Ty>>)
+		&& !(std::is_member_function_pointer_v<_Ty> || std::is_function_v<std::remove_pointer_t<_Ty>>);
 
 	template <typename _Ty>
 	constexpr bool is_function = std::is_member_function_pointer_v<_Ty> || std::is_function_v<std::remove_pointer_t<_Ty>>;
 
-	template <typename _Ty, typename _Var, size_t _Idx>
-	constexpr size_t GetVariantIndex();
+	template <typename, typename, size_t> constexpr size_t GetVariantIndex();
 
 	template <typename _Ty, typename _Var, size_t _Idx = 0>
-	constexpr size_t get_variant_index_v = reflection::GetVariantIndex<_Ty, _Var, _Idx + 1>();
+	constexpr size_t get_variant_index = GetVariantIndex<_Ty, _Var, _Idx + 1>();
+
+	template <typename _Ty, typename _Var>
+	constexpr bool holds_variant_option = get_variant_index<_Ty, _Var> != std::variant_npos;
 
 	template <typename _Ty, class _Class>
 	struct remove_class_pointer {
@@ -101,19 +106,60 @@ namespace reflection
 	template <typename _Base, typename _Derived>
 	concept parent_concept = instance_of<_Base, _Derived>;
 
-	constexpr std::string Clear(std::string token, const std::vector<std::string>& substrs) noexcept;
+	constexpr std::string Clear(std::string token, const std::vector<std::string>& substrs) noexcept
+	{
+		for (const std::string& substr : substrs) {
+			size_t pos = token.find(substr);
+			size_t length = substr.length();
 
-	constexpr std::string Normalize(const std::string& name, const std::string& sign) noexcept;
+			// Delete whitespaces
+			if (token.length() > pos + length && std::isspace(token.at(pos + length)))
+				++length;
 
-	constexpr hash HashCode(const char* key) noexcept(true);
+			while (pos != std::string::npos) {
+				token.erase(pos, length);
+				pos = token.find(substr);
+			}
+		}
 
-	constexpr hash HashCode(const std::string& key) noexcept(true);
+		return token;
+	}
+
+	constexpr std::string Normalize(const std::string& name, const std::string& sign) noexcept
+	{
+		std::string token = std::string{ name + ": " + sign };
+		std::vector<std::string> substrs = { "__ptr64", "__cdecl" };
+
+		return reflection::Clear(token, substrs);
+	}
+
+	constexpr hash HashCode(const char* key) noexcept(true)
+	{
+		hash value = 0;
+		size_t len = 0;
+		while (key[len] != '\0')
+			++len;
+
+		for (uint64_t i = 0; i < len; ++i) {
+			value = value * 37 + key[i];
+		}
+
+		return value;
+	}
+
+	constexpr hash HashCode(const std::string& key) noexcept(true)
+	{
+		hash value = 0;
+
+		for (uint64_t i = 0; i < key.size(); ++i)
+			value = value * 37 + key.at(i);
+
+		return value;
+	}
 
 	template <typename _Ty, typename _Var, size_t _Idx = 0>
 	constexpr size_t GetVariantIndex()
 	{
-		static_assert(std::variant_size_v<_Var> > _Idx, "Variant index out of bounds");
-
 		if constexpr (_Idx >= std::variant_size_v<_Var>)
 			return std::variant_npos;
 		else if constexpr (std::is_same_v<std::variant_alternative_t<_Idx, _Var>, _Ty>)

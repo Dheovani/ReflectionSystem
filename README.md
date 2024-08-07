@@ -28,15 +28,13 @@ Here's a quick example to get you started:
 
 ```cpp
 #include <iostream>
-#include "reflection_system.h"
-
-using reflection_system::Reflective;
+#include "reflection.h"
 
 class Base {};
 
 struct BaseStruct {};
 
-class Derived : public Reflective<Derived>, public Base, public BaseStruct
+class Derived : public Base, public BaseStruct
 {
     std::string str = "string";
     static const long long fl = 5;
@@ -47,28 +45,27 @@ class Derived : public Reflective<Derived>, public Base, public BaseStruct
 public:
     Derived() = default;
 
-    Derived(const std::string& s, const long long& f) : str(s)
+    Derived(const std::string& s) : str(s)
     {}
 
     static void StaticMethod(void) { std::cout << "In the static method" << std::endl; }
 
     void SetStr(const std::string& s) { this->str = s; }
 
-    void PrintMethods() const {
-        FillMethodList();
-        for (auto& method : GetMethods())
-            std::cout << method.sign << std::endl;
-    }
-
-    PARENT_CLASSES(Reflective<Derived>, Base, BaseStruct)
-    ATTRIBUTES(str, fl)
-    METHODS(func1, func2, StaticMethod, PrintMethods)
+    UseReflectionTrait
+    (
+        Derived,
+        Attributes(str, fl),
+        Methods(func1, func2, StaticMethod, SetStr),
+        Parents(Base, BaseStruct)
+    )
 };
 
-int main(int argc, char** argv)
+int main(void)
 {
-    Derived derived;
-    std::cout << derived << std::endl;
+    auto derived = Derived::GetInstance();
+    std::cout << Derived::Classname() << std::endl;
+    std::cout << Derived::Size() << std::endl;
 
     return 0;
 }
