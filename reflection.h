@@ -79,11 +79,10 @@ namespace reflection
 	constexpr bool instance_of = std::is_base_of_v<_Base, std::remove_pointer_t<_Derived>>;
 
 	template <typename _Ty>
-	constexpr bool is_attribute = (std::is_member_object_pointer_v<_Ty> || std::is_object_v<std::remove_pointer_t<_Ty>>)
-		&& !(std::is_member_function_pointer_v<_Ty> || std::is_function_v<std::remove_pointer_t<_Ty>>);
+	constexpr bool is_function = std::is_member_function_pointer_v<_Ty> || std::is_function_v<std::remove_pointer_t<_Ty>>;
 
 	template <typename _Ty>
-	constexpr bool is_function = std::is_member_function_pointer_v<_Ty> || std::is_function_v<std::remove_pointer_t<_Ty>>;
+	constexpr bool is_attribute = !is_function<_Ty> && (std::is_member_object_pointer_v<_Ty> || std::is_object_v<std::remove_pointer_t<_Ty>>);
 
 	template <typename, typename, size_t> constexpr size_t GetVariantIndex();
 
