@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(ReflectionSystem)
 
 set(CMAKE_CXX_STANDARD 20)
-set(SOURCES main.cpp reflection.h for_each.h serializer.h)
+set(SOURCES main.cpp reflection.h utils.h serializer.h)
 
 enable_testing()
 

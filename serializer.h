@@ -8,36 +8,31 @@
 
 #include "reflection.h"
 
-#define MethodExists(method) \
-	template <class _Ty> \
-	struct has_##method { \
-	private: \
-		template<typename U> \
-		static auto check(int) -> decltype(U::##method(), std::true_type()); \
-		template<typename> static std::false_type check(...); \
-	public: \
-		static constexpr bool value = decltype(check<_Ty>(0))::value; \
-	};
-
-
 namespace reflection
 {
-	MethodExists(Classname)
-
-	MethodExists(Size)
-
-	MethodExists(GetParents)
-
-	MethodExists(GetAttributes)
-
-	MethodExists(GetMethods)
+	template <typename _Ty>
+	struct has_serializable_methods {
+	private:
+		template <typename> static std::false_type size(...);
+		template <typename> static std::false_type name(...);
+		template <typename> static std::false_type parents(...);
+		template <typename> static std::false_type methods(...);
+		template <typename> static std::false_type attributes(...);
+		template <typename _Cl> static auto size(int) -> decltype(_Cl::Size(), std::true_type());
+		template <typename _Cl> static auto name(int) -> decltype(_Cl::Classname(), std::true_type());
+		template <typename _Cl> static auto parents(int) -> decltype(_Cl::GetParents(), std::true_type());
+		template <typename _Cl> static auto methods(int) -> decltype(_Cl::GetMethods(), std::true_type());
+		template <typename _Cl> static auto attributes(int) -> decltype(_Cl::GetAttributes(), std::true_type());
+	public:
+		static constexpr bool value = decltype(size<_Ty>(0))::value &&
+									  decltype(name<_Ty>(0))::value &&
+									  decltype(parents<_Ty>(0))::value &&
+									  decltype(methods<_Ty>(0))::value &&
+									  decltype(attributes<_Ty>(0))::value;
+	};
 
 	template <class _Ty>
-	constexpr bool is_serializable = has_Size<_Ty>::value		&&
-									 has_Classname<_Ty>::value  &&
-									 has_GetParents<_Ty>::value &&
-									 has_GetMethods<_Ty>::value &&
-									 has_GetAttributes<_Ty>::value;
+	constexpr bool is_serializable = has_serializable_methods<_Ty>::value;
 
 	template <class _Ty>
 	concept serializable = is_serializable<_Ty>;

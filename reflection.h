@@ -7,64 +7,46 @@
 #include <typeinfo>
 #include <algorithm>
 
-#include "for_each.h"
-
-#define TName(v) typeid(v).name()
-
-#define DeclT(t) decltype(&type::t)
-
-#define Stringify(x) #x
-
-#define Pair(v) { #v, &type::v }
+#include "utils.h"
 
 #define PAssert(parent) \
 	static_assert(std::is_class_v<parent>, #parent " is not a valid class.");
 
-#define Parents(...) \
-	ForEach(PAssert, __VA_ARGS__) \
-	inline static std::vector<std::string> GetParents() noexcept { \
-		return { ForEachWS(Stringify, __VA_ARGS__) }; }
-
 #define AAssert(attrib) \
 	static_assert(reflection::is_attribute<decltype(&type::attrib)>, #attrib " is not an attribute.");
-
-#define Attributes(...) \
-	ForEach(AAssert, __VA_ARGS__) \
-	using attrib_types = std::variant<ForEachWS(DeclT, __VA_ARGS__)>; \
-public: \
-	attrib_types GetAttribute(const std::string& name) const { \
-		for (const auto& pair : GetAttributes()) { if (pair.first == name) return pair.second; } \
-		throw std::runtime_error("Attribute not found"); } \
-	template <typename _Ty> _Ty GetAttribute(const std::string& name) const { return std::get<_Ty>(this->GetAttribute(name)); } \
-	inline static reflection::map<std::string, attrib_types> GetAttributes() noexcept { \
-		return reflection::map<std::string, attrib_types>{ ForEachWS(Pair, __VA_ARGS__) }; } \
-	inline static bool HasAttribute(const std::string& name) noexcept { \
-		const reflection::map<std::string, attrib_types> attrs = GetAttributes(); \
-		return std::find_if(attrs.begin(), attrs.end(), [&name](const auto& elm) { return elm.first == name; }) != attrs.end(); }
 
 #define MAssert(method) \
 	static_assert(reflection::is_function<decltype(&type::method)>, #method " is not a function.");
 
-#define Methods(...) \
-	ForEach(MAssert, __VA_ARGS__) \
+#define Parents(...) ForEach(PAssert, __VA_ARGS__) \
+	inline static std::vector<std::string> GetParents() noexcept { return { ForEachWS(Stringify, __VA_ARGS__) }; }
+
+#define Attributes(...) ForEach(AAssert, __VA_ARGS__) \
+	using attrib_types = std::variant<ForEachWS(DeclT, __VA_ARGS__)>; \
+	attrib_types GetAttribute(const std::string& name) const { \
+		for (const auto& pair : GetAttributes()) { if (pair.first == name) return pair.second; } \
+		throw std::runtime_error("Attribute not found"); } \
+	template <typename _Ty> _Ty GetAttribute(const std::string& name) const { return std::get<_Ty>(this->GetAttribute(name)); } \
+	inline static reflection::map<std::string, attrib_types> GetAttributes() noexcept { return { ForEachWS(Pair, __VA_ARGS__) }; } \
+	inline static bool HasAttribute(const std::string& name) noexcept { \
+		const reflection::map<std::string, attrib_types> attrs = GetAttributes(); \
+		return std::find_if(attrs.begin(), attrs.end(), [&name](const auto& elm) { return elm.first == name; }) != attrs.end(); }
+
+#define Methods(...) ForEach(MAssert, __VA_ARGS__) \
 	using method_types = std::variant<ForEachWS(DeclT, __VA_ARGS__)>; \
-public: \
 	method_types GetMethod(const std::string& name) const { \
 		for (const auto& pair : GetMethods()) { if (pair.first == name) return pair.second; } \
 		throw std::runtime_error("Method not found"); } \
 	template <typename _Ty> _Ty GetMethod(const std::string& name) const { return std::get<_Ty>(this->GetMethod(name)); } \
-	inline static reflection::map<std::string, method_types> GetMethods() noexcept { \
-		return reflection::map<std::string, method_types>{ ForEachWS(Pair, __VA_ARGS__) }; } \
+	inline static reflection::map<std::string, method_types> GetMethods() noexcept { return { ForEachWS(Pair, __VA_ARGS__) }; } \
 	inline static bool HasMethod(const std::string& name) noexcept { \
 		const reflection::map<std::string, method_types> meths = GetMethods(); \
 		return std::find_if(meths.begin(), meths.end(), [&name](const auto& elm) { return elm.first == name; }) != meths.end(); }
 
 #define UseReflectionTrait(t, a, m, p) \
-	using type = t; a m p \
-public: \
+public: using type = t; a m p \
 	inline static t GetInstance() noexcept { return t(); } \
-	template <typename... Args> \
-	inline static t GetInstance(Args... args) noexcept { return t(args...); } \
+	template <typename... Args> inline static t GetInstance(Args... args) noexcept { return t(args...); } \
 	inline static constexpr size_t Size() noexcept { return sizeof(t); } \
 	inline static constexpr std::string Classname() noexcept { return reflection::Clear(TName(t), { "class", "struct" }); }
 

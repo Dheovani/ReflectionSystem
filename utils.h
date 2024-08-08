@@ -1,5 +1,13 @@
 #pragma once
 
+#define TName(v) typeid(v).name()
+
+#define DeclT(t) decltype(&type::t)
+
+#define Stringify(x) #x
+
+#define Pair(v) { #v, &type::v }
+
 #define Expand(x) x
 
 #define AddSem(x) x,
